@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="cordova-plugin-ml-barcode" version="0.0.1">
+
+  <name>Cordova ML Barcode Plugin</name>
+  <description>Cordova plugin for Barcode detection using ML Kit</description>
+  <author>tgptom</author>
+  <keywords>cordova,barcode,mlkit</keywords>
+  <license>MIT</license>
+  <repo>https://github.com/tgptom/cordova-plugin-ml-barcode.git</repo>
+  <issue>https://github.com/tgptom/cordova-plugin-ml-barcode/issues</issue>
+
+  <engines>
+    <engine name="cordova-android" version=">=10.0.0" />
+    <engine name="cordova-ios" version=">=5.1.0" />
+  </engines>
+
+  <asset src="www/getbarcode.js" target="js/getbarcode.js"/>
+  
+  <js-module src="www/getbarcode.js" name="Mlbarcode">
+    <clobbers target="mlbarcode" />
+  </js-module>
+
+  <platform name="android">
+
+    <config-file target="res/xml/config.xml" parent="/*">
+      <feature name="Mlbarcode">
+        <param name="android-package" value="com.tgptom.cordova.plugin.mlbarcode.Mlbarcode"/>
+      </feature>
+    </config-file> 
+<!--
+    <preference name="MLKIT_BARCODE_PACKAGE" default="com.google.android.gms:play-services-mlkit-barcode-scanning"/>
+    <preference name="MLKIT_BARCODE_VERSION" default="18.3.0"/>
+-->
+
+    <preference name="MLKIT_BARCODE_PACKAGE" default="com.google.mlkit:barcode-scanning"/>
+    <preference name="MLKIT_BARCODE_VERSION" default="17.2.0"/>
+
+    <config-file target="AndroidManifest.xml" parent="/*">
+      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+      <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+      <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    </config-file>
+<!--
+    <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/meta-data">
+      <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode" />
+    </edit-config>
+-->
+
+    <source-file src="src/android/Mlbarcode.java" target-dir="src/com/tgptom/cordova/plugin/Mlbarcode/" />
+    
+    <framework src="$MLKIT_BARCODE_PACKAGE:$MLKIT_BARCODE_VERSION" />
+
+  </platform>
+
+  <platform name="ios">
+
+    <config-file target="config.xml" parent="/*">
+        <feature name="Mlbarcode">
+          <param name="ios-package" value="Mlbarcode" />
+        </feature>
+    </config-file>
+    
+    <preference name="CAMERA_USAGE_DESCRIPTION" default="This app needs camera access to detect barcode"/>
+    <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
+        <string>$CAMERA_USAGE_DESCRIPTION</string>
+    </config-file>
+    
+    <preference name="PHOTOLIBRARY_USAGE_DESCRIPTION" default="This app needs photo library access to detect barcode"/>
+    <config-file target="*-Info.plist" parent="NSPhotoLibraryUsageDescription">
+        <string>$PHOTOLIBRARY_USAGE_DESCRIPTION</string>
+    </config-file>
+
+    <header-file src="src/ios/Mlbarcode.h" target-dir="Mlbarcode"/>
+    <source-file src="src/ios/Mlbarcode.m" target-dir="Mlbarcode"/>
+
+    <podspec>
+      <config>
+        <source url="https://cdn.cocoapods.org/"/>
+      </config>
+      <pods use-frameworks="true">
+        <pod name="MLKitBarcodeScanning" spec="~> 2.2.0" />
+      </pods>
+    </podspec>
+
+  </platform>
+
+</plugin>

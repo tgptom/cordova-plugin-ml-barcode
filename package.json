@@ -1,0 +1,33 @@
+{
+    "name": "cordova-plugin-ml-barcode",
+    "version": "0.0.1",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/tgptom/cordova-plugin-ml-plugin"
+    },
+    "cordova": {
+      "id": "cordova-plugin-ml-barcode",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    "keywords": [
+      "cordova",
+      "barcode",
+      "mlkit",
+      "ecosystem:cordova",
+      "cordova-android",
+      "cordova-ios"
+    ],
+    "engines": {
+      "cordovaDependencies": {
+        "cordova-android": ">=6.4.0",
+        "cordova-ios": ">=4.3.0"
+        }
+    },
+    "author": "tgptom",
+    "license": "MIT",
+    "description": "Cordova plugin for Barcode detection using ML Kit"
+  }
+  
