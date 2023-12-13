@@ -80,7 +80,7 @@
         <source url="https://cdn.cocoapods.org/"/>
       </config>
       <pods use-frameworks="true">
-        <pod name="MLKitBarcodeScanning" spec="~> 2.2.0" />
+        <pod name="MLKitBarcodeScanning" spec="~> 3.0.0" />
       </pods>
     </podspec>
 
