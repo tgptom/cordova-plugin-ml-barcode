@@ -88,8 +88,8 @@
                                 completion:^(NSArray<MLKBarcode *> *_Nullable barcodes,
                                              NSError *_Nullable error) {
                                       NSMutableDictionary* resultobjmut = [[NSMutableDictionary alloc] init];             
-                                      if (error != nil || result == nil) {
-                                          if (result==nil) {
+                                      if (error != nil || barcodes == nil) {
+                                          if (barcodes==nil) {
                                             NSNumber *foundBarcode = @NO;
                                             resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
                                                             foundBarcode,@"foundBarcode", nil] mutableCopy];
