@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-ml-barcode" version="0.0.1">
+        id="cordova-plugin-ml-barcode" version="0.0.2">
 
   <name>Cordova ML Barcode Plugin</name>
   <description>Cordova plugin for Barcode detection using ML Kit</description>
@@ -40,7 +40,6 @@
     <config-file target="AndroidManifest.xml" parent="/*">
       <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
       <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-      <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     </config-file>
 <!--
     <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/meta-data">
