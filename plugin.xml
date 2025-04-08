@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-ml-barcode" version="0.0.2">
+        id="cordova-plugin-ml-barcode" version="0.0.3">
 
   <name>Cordova ML Barcode Plugin</name>
   <description>Cordova plugin for Barcode detection using ML Kit</description>
@@ -29,13 +29,9 @@
         <param name="android-package" value="com.tgptom.cordova.plugin.mlbarcode.Mlbarcode"/>
       </feature>
     </config-file> 
-<!--
-    <preference name="MLKIT_BARCODE_PACKAGE" default="com.google.android.gms:play-services-mlkit-barcode-scanning"/>
-    <preference name="MLKIT_BARCODE_VERSION" default="18.3.0"/>
--->
 
     <preference name="MLKIT_BARCODE_PACKAGE" default="com.google.mlkit:barcode-scanning"/>
-    <preference name="MLKIT_BARCODE_VERSION" default="17.2.0"/>
+    <preference name="MLKIT_BARCODE_VERSION" default="17.3.0"/>
 
     <config-file target="AndroidManifest.xml" parent="/*">
       <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
@@ -79,7 +75,7 @@
         <source url="https://cdn.cocoapods.org/"/>
       </config>
       <pods use-frameworks="true">
-        <pod name="MLKitBarcodeScanning" spec="~> 3.0.0" />
+        <pod name="MLKitBarcodeScanning" spec="~> 7.0.0" />
       </pods>
     </podspec>
 

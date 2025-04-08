@@ -84,6 +84,7 @@
                 MLKBarcodeScanner *barcodeScanner = [MLKBarcodeScanner barcodeScannerWithOptions:barcodeOptions];
 
                 MLKVisionImage *image = [[MLKVisionImage alloc] initWithImage:self.image];
+                image.orientation = self.image.imageOrientation;
                 [barcodeScanner processImage:image
                                 completion:^(NSArray<MLKBarcode *> *_Nullable barcodes,
                                              NSError *_Nullable error) {

@@ -3,7 +3,7 @@
 module.exports = {
     getBarcode: function (successCallback, errorCallback, options) {
     	options = options || {};
-    	var imgType = options.imgType || 0;	// 0 NORMFILEURI, 1 NORMNATIVEURI, 2 FASTFILEURI, 3 FASTNATIVEURI, 4 BASE64
+    	//var imgType = options.imgType || 0;	// 0 NORMFILEURI, 1 NORMNATIVEURI, 2 FASTFILEURI, 3 FASTNATIVEURI, 4 BASE64
 		
     	if(options.imgSrc)
     	{
