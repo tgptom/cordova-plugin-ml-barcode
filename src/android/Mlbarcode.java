@@ -126,7 +126,7 @@ public class Mlbarcode extends CordovaPlugin {
                             callbackContext.sendPluginResult(r);
                         }
 
-                        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder().setBarcodeFormats(argscodetype).build();
+                        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder().setBarcodeFormats(argscodetype).enableAllPotentialBarcodes().build();
                         BarcodeScanner barcodeScanner = BarcodeScanning.getClient(options);
                         if (bitmap != null)
                         {
