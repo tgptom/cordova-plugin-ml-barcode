@@ -89,8 +89,8 @@
                                 completion:^(NSArray<MLKBarcode *> *_Nullable barcodes,
                                              NSError *_Nullable error) {
                                       NSMutableDictionary* resultobjmut = [[NSMutableDictionary alloc] init];             
-                                      if (error != nil || barcodes == nil) {
-                                          if (barcodes==nil) {
+                                      if (error != nil || barcodes == nil || barcodes.count == 0) {
+                                          if (barcodes==nil || barcodes.count == 0) {
                                             NSNumber *foundBarcode = @NO;
                                             resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
                                                             foundBarcode,@"foundBarcode", nil] mutableCopy];
@@ -110,24 +110,26 @@
                                               [self.commandDelegate sendPluginResult:resulta callbackId: self.commandglo.callbackId];
                                           }
                                       }
-                                      
-                                      NSMutableArray* codes = [[NSMutableArray alloc] init];
+                                      else
+                                      {
+                                        NSMutableArray* codes = [[NSMutableArray alloc] init];
 
-                                      for (MLKBarcode *barcode in barcodes) {
-                                          [codes addObject:barcode.rawValue];
+                                        for (MLKBarcode *barcode in barcodes) {
+                                            [codes addObject:barcode.rawValue];
+                                        }
+
+                                        NSNumber *foundBarcode = @YES;
+                                        resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
+                                                        foundBarcode,@"foundBarcode",
+                                                        codes,@"codes", nil] mutableCopy];
+
+                                        NSDictionary *resultobj = [NSDictionary dictionaryWithDictionary:resultobjmut];
+                                        
+                                        CDVPluginResult* resultcor = [CDVPluginResult
+                                                                        resultWithStatus:CDVCommandStatus_OK
+                                                                        messageAsDictionary:resultobj];
+                                            [self.commandDelegate sendPluginResult:resultcor callbackId: self.commandglo.callbackId];
                                       }
-
-                                      NSNumber *foundBarcode = @YES;
-                                      resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
-                                                       foundBarcode,@"foundBarcode",
-                                                       codes,@"codes", nil] mutableCopy];
-
-                                      NSDictionary *resultobj = [NSDictionary dictionaryWithDictionary:resultobjmut];
-                                      
-                                      CDVPluginResult* resultcor = [CDVPluginResult
-                                                                    resultWithStatus:CDVCommandStatus_OK
-                                                                    messageAsDictionary:resultobj];
-                    [self.commandDelegate sendPluginResult:resultcor callbackId: self.commandglo.callbackId];
                                   }];
             }
             else
