@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-ml-barcode" version="0.0.3">
+        id="cordova-plugin-ml-barcode" version="0.0.4">
 
   <name>Cordova ML Barcode Plugin</name>
   <description>Cordova plugin for Barcode detection using ML Kit</description>
@@ -75,7 +75,7 @@
         <source url="https://cdn.cocoapods.org/"/>
       </config>
       <pods use-frameworks="true">
-        <pod name="MLKitBarcodeScanning" spec="~> 7.0.0" />
+        <pod name="MLKitBarcodeScanning" spec="~> 8.0.0" />
       </pods>
     </podspec>
 
