@@ -115,7 +115,9 @@
                                         NSMutableArray* codes = [[NSMutableArray alloc] init];
 
                                         for (MLKBarcode *barcode in barcodes) {
-                                            [codes addObject:barcode.rawValue];
+                                            if (barcode.rawValue != nil) {
+                                                [codes addObject:barcode.rawValue];
+                                            }
                                         }
 
                                         NSNumber *foundBarcode = @YES;
@@ -198,7 +200,24 @@
 {
     __block NSData *iData = nil;
     
-    PHFetchResult *result = [PHAsset fetchAssetsWithALAssetURLs:@[urlMedia] options:nil];
+    PHFetchResult *result = nil;
+    
+    // Handle modern ph:// photo library URLs.
+    // The ph:// scheme uses the PHAsset local identifier as the host component,
+    // e.g. "ph://CC95F08C-88C3-4012-9D6D-64A413D254B3/L0/001".
+    if ([urlMedia.scheme isEqualToString:@"ph"]) {
+        NSString *localIdentifier = urlMedia.host;
+        if (localIdentifier && localIdentifier.length > 0) {
+            result = [PHAsset fetchAssetsWithLocalIdentifiers:@[localIdentifier] options:nil];
+        }
+    } else {
+        // Fall back to the assets-library:// (ALAsset) URL style
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        result = [PHAsset fetchAssetsWithALAssetURLs:@[urlMedia] options:nil];
+#pragma clang diagnostic pop
+    }
+    
     PHAsset *asset = [result firstObject];
     if (asset != nil)
     {
@@ -208,11 +227,19 @@
         options.version = PHImageRequestOptionsVersionCurrent;
         
         @autoreleasepool {
-            [imageManager requestImageDataForAsset:asset options:options resultHandler:^(NSData *imageData, NSString *dataUTI, UIImageOrientation orientation, NSDictionary *info) {
-                iData = [imageData copy];
-            }];
+            if (@available(iOS 13.0, *)) {
+                [imageManager requestImageDataAndOrientationForAsset:asset options:options resultHandler:^(NSData *imageData, NSString *dataUTI, CGImagePropertyOrientation orientation, NSDictionary *info) {
+                    iData = [imageData copy];
+                }];
+            } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                [imageManager requestImageDataForAsset:asset options:options resultHandler:^(NSData *imageData, NSString *dataUTI, UIImageOrientation orientation, NSDictionary *info) {
+                    iData = [imageData copy];
+                }];
+#pragma clang diagnostic pop
+            }
         }
-        //assert(iData.length != 0);
         return iData;
     }
     else
