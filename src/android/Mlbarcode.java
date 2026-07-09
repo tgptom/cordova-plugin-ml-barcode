@@ -15,7 +15,6 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import androidx.annotation.NonNull;
 
-import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 
@@ -27,6 +26,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.Objects;
 
 
@@ -72,21 +72,27 @@ public class Mlbarcode extends CordovaPlugin {
                                 {
                                         String imagestr = argimagestr;
 
-                                        // code block that allows this plugin to directly work with document scanner plugin and camera plugin
-                                        if(imagestr.substring(0,6).equals("file://"))
-                                        {
-                                            imagestr = argimagestr.replaceFirst("file://","");
-                                        }
-
-                                        uri = Uri.parse(imagestr);
-
-                                        if((argstype==NORMFILEURI || argstype==NORMNATIVEURI)&& uri != null) // normal ocr
-                                        {
-                                            bitmap = MediaStore.Images.Media.getBitmap(cordova.getActivity().getBaseContext().getContentResolver(), uri);
-                                        }
-                                        else if((argstype==FASTFILEURI || argstype==FASTNATIVEURI) && uri != null) //fast ocr (might be less accurate)
-                                        {
+                                        if (imagestr.startsWith("file://")) {
+                                            // Decode directly from the filesystem path for file:// URIs
+                                            String filePath = imagestr.substring(7);
+                                            if ((argstype == NORMFILEURI || argstype == NORMNATIVEURI)) {
+                                        bitmap = BitmapFactory.decodeFile(filePath);
+                                            } else {
+                                        bitmap = decodeBitmapFile(filePath);
+                                            }
+                                        } else {
+                                            uri = Uri.parse(imagestr);
+                                            if (uri != null) {
+                                        if (argstype == NORMFILEURI || argstype == NORMNATIVEURI) {
+                                            try (InputStream is = cordova.getActivity().getBaseContext().getContentResolver().openInputStream(uri)) {
+                                                if (is != null) {
+                                                    bitmap = BitmapFactory.decodeStream(is);
+                                                }
+                                            }
+                                        } else {
                                             bitmap = decodeBitmapUri(cordova.getActivity().getBaseContext(), uri);
+                                        }
+                                            }
                                         }
 
                                 }
@@ -146,7 +152,9 @@ public class Mlbarcode extends CordovaPlugin {
                                                 resultobj.put("foundBarcode", true);
 
                                                 for (Barcode barcode: barcodes) {
-                                                    codes.put(barcode.getRawValue());
+                                                    if (barcode.getRawValue() != null) {
+                                                        codes.put(barcode.getRawValue());
+                                                    }
                                                 }
 
                                                 resultobj.put("codes", codes);
@@ -195,6 +203,23 @@ public class Mlbarcode extends CordovaPlugin {
             return false;
     }
 
+
+    private Bitmap decodeBitmapFile(String filePath)
+    {
+        int targetW = 600;
+        int targetH = 600;
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(filePath, bmOptions);
+        int photoW = bmOptions.outWidth;
+        int photoH = bmOptions.outHeight;
+
+        int scaleFactor = Math.min(photoW / targetW, photoH / targetH);
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = scaleFactor;
+
+        return BitmapFactory.decodeFile(filePath, bmOptions);
+    }
 
     private Bitmap decodeBitmapUri(Context ctx, Uri uri) throws FileNotFoundException
     {

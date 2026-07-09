@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="cordova-plugin-ml-barcode" version="0.0.4">
+        id="cordova-plugin-ml-barcode" version="0.1.0">
 
   <name>Cordova ML Barcode Plugin</name>
   <description>Cordova plugin for Barcode detection using ML Kit</description>
@@ -13,7 +13,7 @@
 
   <engines>
     <engine name="cordova-android" version=">=10.0.0" />
-    <engine name="cordova-ios" version=">=5.1.0" />
+    <engine name="cordova-ios" version=">=7.0.0" />
   </engines>
 
   <asset src="www/getbarcode.js" target="js/getbarcode.js"/>
@@ -43,7 +43,7 @@
     </edit-config>
 -->
 
-    <source-file src="src/android/Mlbarcode.java" target-dir="src/com/tgptom/cordova/plugin/Mlbarcode/" />
+    <source-file src="src/android/Mlbarcode.java" target-dir="src/com/tgptom/cordova/plugin/mlbarcode/" />
     
     <framework src="$MLKIT_BARCODE_PACKAGE:$MLKIT_BARCODE_VERSION" />
 
