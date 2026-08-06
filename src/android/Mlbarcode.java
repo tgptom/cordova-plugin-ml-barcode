@@ -2,7 +2,6 @@ package com.tgptom.cordova.plugin.mlbarcode;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.PluginResult;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -16,9 +15,10 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 
 import android.util.Base64;
-import android.util.Log;
 
 import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
@@ -27,8 +27,6 @@ import com.google.mlkit.vision.barcode.common.Barcode;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.Objects;
-
 
 public class Mlbarcode extends CordovaPlugin {
 
@@ -37,170 +35,148 @@ public class Mlbarcode extends CordovaPlugin {
     private static final int FASTFILEURI = 2; // Make uncompressed bitmap using uri from picture library (FASTFILEURI & FASTFILEURI have same functionality in android)
     private static final int FASTNATIVEURI = 3; // Make compressed bitmap using uri from picture library for faster ocr but might reduce accuracy (FASTFILEURI & FASTFILEURI have same functionality in android)
     private static final int BASE64 = 4;  // send base64 image instead of uri
+    private static final int ALLOWED_BARCODE_FORMATS =
+            Barcode.FORMAT_CODE_128
+                    | Barcode.FORMAT_CODE_39
+                    | Barcode.FORMAT_CODE_93
+                    | Barcode.FORMAT_CODABAR
+                    | Barcode.FORMAT_DATA_MATRIX
+                    | Barcode.FORMAT_EAN_13
+                    | Barcode.FORMAT_EAN_8
+                    | Barcode.FORMAT_ITF
+                    | Barcode.FORMAT_QR_CODE
+                    | Barcode.FORMAT_UPC_A
+                    | Barcode.FORMAT_UPC_E
+                    | Barcode.FORMAT_PDF417
+                    | Barcode.FORMAT_AZTEC;
 
     @Override
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
-        if (action.equals("getBarcode")) {
-            cordova.getThreadPool().execute(new Runnable() {
-                public void run() {
+        if (!action.equals("getBarcode")) {
+            return false;
+        }
+
+        cordova.getThreadPool().execute(() -> {
+            try {
+                int argstype;
+                String argimagestr;
+                int argscodetype;
+                try {
+                    argstype = args.getInt(0);
+                    argimagestr = args.getString(1);
+                    argscodetype = args.getInt(2);
+                } catch (Exception e) {
+                    callbackContext.error("Argument error");
+                    return;
+                }
+
+                Bitmap bitmap = null;
+                if (argstype == NORMFILEURI || argstype == NORMNATIVEURI || argstype == FASTFILEURI || argstype == FASTNATIVEURI) {
+                    if (argimagestr == null || argimagestr.trim().isEmpty()) {
+                        callbackContext.error("Image Uri or Base64 string is empty");
+                        return;
+                    }
+
                     try {
-                            int argstype = NORMFILEURI;
-                            String argimagestr = "";
-                            int argscodetype = 0;
-                        try
-                        {
-                            Log.d("args", args.toString());
-
-                            argstype = args.getInt(0);
-                            argimagestr = args.getString(1);
-                            argscodetype = args.getInt(2);
-                        }
-                        catch(Exception e)
-                        {
-                            callbackContext.error("Argument error");
-                            PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                            callbackContext.sendPluginResult(r);
-                        }
-                        Bitmap bitmap= null;
-                        Uri uri = null;
-                        if(argstype==NORMFILEURI || argstype==NORMNATIVEURI||argstype==FASTFILEURI || argstype==FASTNATIVEURI)
-                        {
-                            try
-                            {
-                                if(!argimagestr.trim().equals(""))
-                                {
-                                        String imagestr = argimagestr;
-
-                                        if (imagestr.startsWith("file://")) {
-                                            // Decode directly from the filesystem path for file:// URIs
-                                            String filePath = imagestr.substring(7);
-                                            if ((argstype == NORMFILEURI || argstype == NORMNATIVEURI)) {
-                                        bitmap = BitmapFactory.decodeFile(filePath);
-                                            } else {
-                                        bitmap = decodeBitmapFile(filePath);
-                                            }
-                                        } else {
-                                            uri = Uri.parse(imagestr);
-                                            if (uri != null) {
-                                        if (argstype == NORMFILEURI || argstype == NORMNATIVEURI) {
-                                            try (InputStream is = cordova.getActivity().getBaseContext().getContentResolver().openInputStream(uri)) {
-                                                if (is != null) {
-                                                    bitmap = BitmapFactory.decodeStream(is);
-                                                }
-                                            }
-                                        } else {
-                                            bitmap = decodeBitmapUri(cordova.getActivity().getBaseContext(), uri);
+                        String imagestr = argimagestr;
+                        if (imagestr.startsWith("file://")) {
+                            String filePath = Uri.parse(imagestr).getPath();
+                            if (filePath == null || filePath.isEmpty()) {
+                                callbackContext.error("Invalid file URI");
+                                return;
+                            }
+                            if (argstype == NORMFILEURI || argstype == NORMNATIVEURI) {
+                                bitmap = BitmapFactory.decodeFile(filePath);
+                            } else {
+                                bitmap = decodeBitmapFile(filePath);
+                            }
+                        } else {
+                            Uri uri = Uri.parse(imagestr);
+                            if (uri != null) {
+                                if (argstype == NORMFILEURI || argstype == NORMNATIVEURI) {
+                                    try (InputStream is = cordova.getActivity().getBaseContext().getContentResolver().openInputStream(uri)) {
+                                        if (is != null) {
+                                            bitmap = BitmapFactory.decodeStream(is);
                                         }
-                                            }
-                                        }
-
-                                }
-                                else
-                                {
-                                    callbackContext.error("Image Uri or Base64 string is empty");
-                                    PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                                    callbackContext.sendPluginResult(r);
+                                    }
+                                } else {
+                                    bitmap = decodeBitmapUri(cordova.getActivity().getBaseContext(), uri);
                                 }
                             }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
-                                callbackContext.error("Exception");
-                                PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                                callbackContext.sendPluginResult(r);
-                            }
-                        }
-                        else if (argstype==BASE64)
-                        {
-                            if(!argimagestr.trim().equals(""))
-                            {
-                                byte[] decodedString = Base64.decode(argimagestr, Base64.DEFAULT);
-                                bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                            }
-                            else
-                            {
-                                callbackContext.error("Image Uri or Base64 string is empty");
-                                PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                                callbackContext.sendPluginResult(r);
-                            }
-                        }
-                        else
-                        {
-                            callbackContext.error("Non existent argument. Use 0, 1, 2, 3 or 4");
-                            PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                            callbackContext.sendPluginResult(r);
-                        }
-
-                        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder().setBarcodeFormats(argscodetype).enableAllPotentialBarcodes().build();
-                        BarcodeScanner barcodeScanner = BarcodeScanning.getClient(options);
-                        if (bitmap != null)
-                        {
-                            InputImage image = InputImage.fromBitmap(bitmap,0);
-                            barcodeScanner.process(image)
-                                    .addOnSuccessListener(barcodes -> {
-                                        try
-                                        {
-                                            JSONObject resultobj = new JSONObject();
-
-                                            JSONArray codes = new JSONArray();
-
-                                            if (barcodes.isEmpty()) {
-                                                resultobj.put("foundBarcode", false);
-                                            }else{
-                                                
-                                                resultobj.put("foundBarcode", true);
-
-                                                for (Barcode barcode: barcodes) {
-                                                    if (barcode.getRawValue() != null) {
-                                                        codes.put(barcode.getRawValue());
-                                                    }
-                                                }
-
-                                                resultobj.put("codes", codes);
-                                            }
-
-                                            callbackContext.success(resultobj);
-                                            PluginResult r = new PluginResult(PluginResult.Status.OK);
-                                            callbackContext.sendPluginResult(r);
-
-                                        }
-                                        catch (JSONException e)
-                                        {
-                                            callbackContext.error(String.valueOf(e));
-                                            PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                                            callbackContext.sendPluginResult(r);
-                                        }
-                                    })
-                                    .addOnFailureListener(
-                                            new OnFailureListener() {
-                                                @Override
-                                                public void onFailure(@NonNull Exception e) {
-                                                    callbackContext.error("Error with ML Kit");
-                                                    PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                                                    callbackContext.sendPluginResult(r);
-                                                }
-                                            });
-
-                        }
-                        else
-                        {
-                            callbackContext.error("Error in uri or base64 data!");
-                            PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                            callbackContext.sendPluginResult(r);
                         }
                     } catch (Exception e) {
-                        callbackContext.error("Main loop Exception");
-                        PluginResult r = new PluginResult(PluginResult.Status.ERROR);
-                        callbackContext.sendPluginResult(r);
+                        callbackContext.error("Exception");
+                        return;
                     }
+                } else if (argstype == BASE64) {
+                    if (argimagestr == null || argimagestr.trim().isEmpty()) {
+                        callbackContext.error("Image Uri or Base64 string is empty");
+                        return;
+                    }
+                    try {
+                        byte[] decodedString = Base64.decode(argimagestr, Base64.DEFAULT);
+                        bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                    } catch (IllegalArgumentException e) {
+                        callbackContext.error("Invalid Base64 image data");
+                        return;
+                    }
+                } else {
+                    callbackContext.error("Non existent argument. Use 0, 1, 2, 3 or 4");
+                    return;
                 }
-            });
 
-            return true;
+                if (bitmap == null) {
+                    callbackContext.error("Error in uri or base64 data!");
+                    return;
+                }
 
-        }
-            return false;
+                BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
+                        .setBarcodeFormats(sanitizeBarcodeFormats(argscodetype))
+                        .enableAllPotentialBarcodes()
+                        .build();
+                BarcodeScanner barcodeScanner = BarcodeScanning.getClient(options);
+                InputImage image = InputImage.fromBitmap(bitmap, 0);
+                barcodeScanner.process(image)
+                        .addOnSuccessListener(barcodes -> {
+                            try {
+                                JSONObject resultobj = new JSONObject();
+                                JSONArray codes = new JSONArray();
+
+                                for (Barcode barcode : barcodes) {
+                                    if (barcode.getRawValue() != null) {
+                                        codes.put(barcode.getRawValue());
+                                    }
+                                }
+
+                                boolean foundBarcode = codes.length() > 0;
+                                resultobj.put("foundBarcode", foundBarcode);
+                                if (foundBarcode) {
+                                    resultobj.put("codes", codes);
+                                }
+                                callbackContext.success(resultobj);
+                            } catch (JSONException e) {
+                                callbackContext.error(String.valueOf(e));
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                callbackContext.error("Error with ML Kit");
+                            }
+                        })
+                        .addOnCompleteListener(new OnCompleteListener<java.util.List<Barcode>>() {
+                            @Override
+                            public void onComplete(@NonNull Task<java.util.List<Barcode>> task) {
+                                barcodeScanner.close();
+                            }
+                        });
+            } catch (Exception e) {
+                callbackContext.error("Main loop Exception");
+            }
+        });
+
+        return true;
     }
 
 
@@ -214,7 +190,14 @@ public class Mlbarcode extends CordovaPlugin {
         int photoW = bmOptions.outWidth;
         int photoH = bmOptions.outHeight;
 
+        if (photoW <= 0 || photoH <= 0) {
+            return null;
+        }
+
         int scaleFactor = Math.min(photoW / targetW, photoH / targetH);
+        if (scaleFactor < 1) {
+            scaleFactor = 1;
+        }
         bmOptions.inJustDecodeBounds = false;
         bmOptions.inSampleSize = scaleFactor;
 
@@ -227,15 +210,33 @@ public class Mlbarcode extends CordovaPlugin {
         int targetH = 600;
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
-        BitmapFactory.decodeStream(ctx.getContentResolver().openInputStream(uri), null, bmOptions);
+        try (InputStream boundsStream = ctx.getContentResolver().openInputStream(uri)) {
+            BitmapFactory.decodeStream(boundsStream, null, bmOptions);
+        }
         int photoW = bmOptions.outWidth;
         int photoH = bmOptions.outHeight;
 
+        if (photoW <= 0 || photoH <= 0) {
+            return null;
+        }
+
         int scaleFactor = Math.min(photoW / targetW, photoH / targetH);
+        if (scaleFactor < 1) {
+            scaleFactor = 1;
+        }
         bmOptions.inJustDecodeBounds = false;
         bmOptions.inSampleSize = scaleFactor;
 
-        return BitmapFactory.decodeStream(ctx.getContentResolver()
-                .openInputStream(uri), null, bmOptions);
+        try (InputStream decodeStream = ctx.getContentResolver().openInputStream(uri)) {
+            return BitmapFactory.decodeStream(decodeStream, null, bmOptions);
+        }
+    }
+
+    private int sanitizeBarcodeFormats(int rawFormats) {
+        if (rawFormats <= 0) {
+            return Barcode.FORMAT_ALL_FORMATS;
+        }
+        int sanitized = rawFormats & ALLOWED_BARCODE_FORMATS;
+        return sanitized == 0 ? Barcode.FORMAT_ALL_FORMATS : sanitized;
     }
 }

@@ -8,107 +8,119 @@
 #define FASTFILEURI ((int) 2)
 #define FASTNATIVEURI ((int) 3)
 #define BASE64 ((int) 4)
+#define ALLOWED_BARCODE_FORMATS (MLKBarcodeFormatCode128 | MLKBarcodeFormatCode39 | MLKBarcodeFormatCode93 | MLKBarcodeFormatCodaBar | MLKBarcodeFormatDataMatrix | MLKBarcodeFormatEAN13 | MLKBarcodeFormatEAN8 | MLKBarcodeFormatITF | MLKBarcodeFormatQRCode | MLKBarcodeFormatUPCA | MLKBarcodeFormatUPCE | MLKBarcodeFormatPDF417 | MLKBarcodeFormatAztec)
 
 - (void)getBarcode:(CDVInvokedUrlCommand*)command
 {
     [self.commandDelegate runInBackground:^{
         @try
         {
-            self.commandglo = command;
             int stype = NORMFILEURI; // sourceType
-            NSString* name;
+            NSString* name = nil;
             int ctype = 0;
-            self.image = NULL;
+            UIImage *imageToScan = nil;
             @try {
-                NSString *st =[self.commandglo argumentAtIndex:0 withDefault:@(0)];
+                NSNumber *st = [command argumentAtIndex:0 withDefault:@(0)];
                 stype = [st intValue];
-                name = [self.commandglo argumentAtIndex:1];
-                NSString *ct =[self.commandglo argumentAtIndex:2 withDefault:@(0)];
+                name = [command argumentAtIndex:1];
+                NSNumber *ct = [command argumentAtIndex:2 withDefault:@(0)];
                 ctype = [ct intValue];
             }
             @catch (NSException *exception) {
                 CDVPluginResult* result = [CDVPluginResult
-                                           resultWithStatus:CDVCommandStatus_ERROR
-                                           messageAsString:@"argument/parameter type mismatch error"];
-                [self.commandDelegate sendPluginResult:result callbackId:self.commandglo.callbackId];
+                                          resultWithStatus:CDVCommandStatus_ERROR
+                                          messageAsString:@"argument/parameter type mismatch error"];
+                [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+                return;
             }
             
             if (stype == NORMFILEURI || stype == NORMNATIVEURI || stype == FASTFILEURI || stype == FASTNATIVEURI)
             {
+                if (name == nil || name.length == 0) {
+                    CDVPluginResult* result = [CDVPluginResult
+                                              resultWithStatus:CDVCommandStatus_ERROR
+                                              messageAsString:@"Image Uri or Base64 string is empty"];
+                    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+                    return;
+                }
                 if (stype==NORMFILEURI)
                 {
                     NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:name]];
-                    self.image = [UIImage imageWithData:imageData];
+                    imageToScan = [UIImage imageWithData:imageData];
                 }
                 else if (stype==NORMNATIVEURI)
                 {
                     NSString *urlString = [NSString stringWithFormat:@"%@", name];
                     NSURL *url = [NSURL URLWithString:[urlString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
                     NSData *imageData = [self retrieveAssetDataPhotosFramework:url];
-                    self.image = [UIImage imageWithData:imageData];
+                    imageToScan = [UIImage imageWithData:imageData];
                 }
                 else if (stype==FASTFILEURI)
                 {
                     NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:name]];
-                    self.image = [UIImage imageWithData:imageData];
-                    self.image = [self resizeImage:self.image];
+                    imageToScan = [UIImage imageWithData:imageData];
+                    imageToScan = [self resizeImage:imageToScan];
                 }
                 else if (stype==FASTNATIVEURI)
                 {
                     NSString *urlString = [NSString stringWithFormat:@"%@", name];
                     NSURL *url = [NSURL URLWithString:[urlString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
                     NSData *imageData = [self retrieveAssetDataPhotosFramework:url];
-                    self.image = [UIImage imageWithData:imageData];
-                    self.image = [self resizeImage:self.image];
+                    imageToScan = [UIImage imageWithData:imageData];
+                    imageToScan = [self resizeImage:imageToScan];
                 }
                 
             }
             else if (stype==BASE64)
             {
+                if (name == nil || name.length == 0) {
+                    CDVPluginResult* result = [CDVPluginResult
+                                              resultWithStatus:CDVCommandStatus_ERROR
+                                              messageAsString:@"Image Uri or Base64 string is empty"];
+                    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+                    return;
+                }
                 NSData *data = [[NSData alloc]initWithBase64EncodedString:name options:NSDataBase64DecodingIgnoreUnknownCharacters];
-                self.image = [UIImage imageWithData:data];
+                imageToScan = [UIImage imageWithData:data];
             }
             else
             {
                 CDVPluginResult* result = [CDVPluginResult
-                                           resultWithStatus:CDVCommandStatus_ERROR
-                                           messageAsString:@"sourceType argument should be 0,1,2,3 or 4"];
-                [self.commandDelegate sendPluginResult:result callbackId:self.commandglo.callbackId];
+                                          resultWithStatus:CDVCommandStatus_ERROR
+                                          messageAsString:@"sourceType argument should be 0,1,2,3 or 4"];
+                [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+                return;
             }
             
             
-            if (self.image!=NULL)
+            if (imageToScan != nil)
             {
-                MLKBarcodeFormat format = ctype; // MLKBarcodeFormatAll
+                MLKBarcodeFormat format = [self sanitizeBarcodeFormats:ctype];
                 MLKBarcodeScannerOptions *barcodeOptions = [[MLKBarcodeScannerOptions alloc] initWithFormats:format];
                 MLKBarcodeScanner *barcodeScanner = [MLKBarcodeScanner barcodeScannerWithOptions:barcodeOptions];
 
-                MLKVisionImage *image = [[MLKVisionImage alloc] initWithImage:self.image];
-                image.orientation = self.image.imageOrientation;
+                MLKVisionImage *image = [[MLKVisionImage alloc] initWithImage:imageToScan];
+                image.orientation = imageToScan.imageOrientation;
                 [barcodeScanner processImage:image
                                 completion:^(NSArray<MLKBarcode *> *_Nullable barcodes,
-                                             NSError *_Nullable error) {
+                                            NSError *_Nullable error) {
                                       NSMutableDictionary* resultobjmut = [[NSMutableDictionary alloc] init];             
-                                      if (error != nil || barcodes == nil || barcodes.count == 0) {
-                                          if (barcodes==nil || barcodes.count == 0) {
-                                            NSNumber *foundBarcode = @NO;
-                                            resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
-                                                            foundBarcode,@"foundBarcode", nil] mutableCopy];
-                                            NSDictionary *resultobj = [NSDictionary dictionaryWithDictionary:resultobjmut];
-                                            
-                                            CDVPluginResult* resultcor = [CDVPluginResult
-                                                                        resultWithStatus:CDVCommandStatus_OK
-                                                                        messageAsDictionary:resultobj];
-                                            [self.commandDelegate sendPluginResult:resultcor callbackId:_commandglo.callbackId];
+                                      if (error != nil) {
+                                          CDVPluginResult* resulta = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error with Barcode Scanning Module"];
+                                          [self.commandDelegate sendPluginResult:resulta callbackId:command.callbackId];
+                                          return;
+                                      }
 
-                                            //   CDVPluginResult* resulta = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No text found in image"];
-                                            //   [self.commandDelegate sendPluginResult:resulta callbackId: self.commandglo.callbackId];
-                                          }
-                                          else
-                                          {
-                                              CDVPluginResult* resulta = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error with Text Recognition Module"];
-                                              [self.commandDelegate sendPluginResult:resulta callbackId: self.commandglo.callbackId];
-                                          }
+                                      if (barcodes == nil || barcodes.count == 0) {
+                                          NSNumber *foundBarcode = @NO;
+                                          resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
+                                                          foundBarcode,@"foundBarcode", nil] mutableCopy];
+                                          NSDictionary *resultobj = [NSDictionary dictionaryWithDictionary:resultobjmut];
+                                           
+                                          CDVPluginResult* resultcor = [CDVPluginResult
+                                                                      resultWithStatus:CDVCommandStatus_OK
+                                                                      messageAsDictionary:resultobj];
+                                          [self.commandDelegate sendPluginResult:resultcor callbackId:command.callbackId];
                                       }
                                       else
                                       {
@@ -120,41 +132,61 @@
                                             }
                                         }
 
-                                        NSNumber *foundBarcode = @YES;
-                                        resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
-                                                        foundBarcode,@"foundBarcode",
-                                                        codes,@"codes", nil] mutableCopy];
+                                        NSNumber *foundBarcode = @(codes.count > 0);
+                                        if (codes.count > 0) {
+                                            resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
+                                                            foundBarcode,@"foundBarcode",
+                                                            codes,@"codes", nil] mutableCopy];
+                                        } else {
+                                            resultobjmut = [[[NSDictionary alloc] initWithObjectsAndKeys:
+                                                            foundBarcode,@"foundBarcode", nil] mutableCopy];
+                                        }
 
                                         NSDictionary *resultobj = [NSDictionary dictionaryWithDictionary:resultobjmut];
-                                        
+                                         
                                         CDVPluginResult* resultcor = [CDVPluginResult
                                                                         resultWithStatus:CDVCommandStatus_OK
                                                                         messageAsDictionary:resultobj];
-                                            [self.commandDelegate sendPluginResult:resultcor callbackId: self.commandglo.callbackId];
+                                            [self.commandDelegate sendPluginResult:resultcor callbackId:command.callbackId];
                                       }
                                   }];
             }
             else
             {
                 CDVPluginResult* result = [CDVPluginResult
-                                           resultWithStatus:CDVCommandStatus_ERROR
-                                           messageAsString:@"Error in uri or base64 data!"];
-                [self.commandDelegate sendPluginResult:result callbackId: self.commandglo.callbackId];
+                                          resultWithStatus:CDVCommandStatus_ERROR
+                                          messageAsString:@"Error in uri or base64 data!"];
+                [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
             }
         }
         @catch (NSException *exception)
         {
             CDVPluginResult* result = [CDVPluginResult
-                                       resultWithStatus:CDVCommandStatus_ERROR
-                                       messageAsString:@"Main loop Exception"];
-            [self.commandDelegate sendPluginResult:result callbackId: self.commandglo.callbackId];
+                                      resultWithStatus:CDVCommandStatus_ERROR
+                                      messageAsString:@"Main loop Exception"];
+            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         }
     }];
+}
+
+-(MLKBarcodeFormat)sanitizeBarcodeFormats:(NSInteger)rawFormats
+{
+    if (rawFormats <= 0) {
+        return MLKBarcodeFormatAll;
+    }
+    NSInteger sanitized = rawFormats & ALLOWED_BARCODE_FORMATS;
+    if (sanitized == 0) {
+        return MLKBarcodeFormatAll;
+    }
+    return (MLKBarcodeFormat)sanitized;
 }
 
 
 -(UIImage *)resizeImage:(UIImage *)image
 {
+    if (image == nil) {
+        return nil;
+    }
     float actualHeight = image.size.height;
     float actualWidth = image.size.width;
     float maxHeight = 600;
@@ -203,12 +235,16 @@
     PHFetchResult *result = nil;
     
     // Handle modern ph:// photo library URLs.
-    // The ph:// scheme uses the PHAsset local identifier as the host component,
+    // The ph:// scheme uses the PHAsset local identifier as the resource specifier,
     // e.g. "ph://CC95F08C-88C3-4012-9D6D-64A413D254B3/L0/001".
     if ([urlMedia.scheme isEqualToString:@"ph"]) {
-        NSString *localIdentifier = urlMedia.host;
-        if (localIdentifier && localIdentifier.length > 0) {
-            result = [PHAsset fetchAssetsWithLocalIdentifiers:@[localIdentifier] options:nil];
+        NSString *urlString = urlMedia.absoluteString;
+        if ([urlString hasPrefix:@"ph://"]) {
+            NSString *localIdentifier = [urlString substringFromIndex:[@"ph://" length]];
+            localIdentifier = [localIdentifier stringByRemovingPercentEncoding];
+            if (localIdentifier && localIdentifier.length > 0) {
+                result = [PHAsset fetchAssetsWithLocalIdentifiers:@[localIdentifier] options:nil];
+            }
         }
     } else {
         // Fall back to the assets-library:// (ALAsset) URL style
