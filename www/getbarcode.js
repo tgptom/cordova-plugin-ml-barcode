@@ -16,7 +16,9 @@ module.exports = {
     	}
     	else
     	{
-    		alert("No Uri or Base64 passed into the plugin. Please provide a value for imgsrc");
+            if (typeof errorCallback === "function") {
+                errorCallback("No Uri or Base64 passed into the plugin. Please provide a value for imgSrc");
+            }
     	}
     }
 };
