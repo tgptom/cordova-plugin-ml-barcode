@@ -58,7 +58,7 @@ mlbarcode.getBarcode(
     {
         imgSrc: imageUri,   // Required: URI string or base64 image data
         imgType: 0,         // Optional: see Image Source Types below (default: 0)
-        codeType: 0         // Optional: barcode format filter (default: 0 = all formats)
+        codeType: mlbarcode.CODE_TYPES.QR_CODE // Optional: barcode format filter (default: ALL_FORMATS)
     }
 );
 ```
@@ -75,7 +75,24 @@ mlbarcode.getBarcode(
 
 ### Barcode Format (`codeType`)
 
-Use `0` to scan all formats, or pass an ML Kit barcode format constant. See [ML Kit Barcode formats](https://developers.google.com/ml-kit/vision/barcode-scanning/android#barcode-formats) for the list of supported values.
+Use one of the plugin constants below (or `0` for all formats). You can pass either a numeric value or constant name string (for example `"QR_CODE"`):
+
+| Constant | Value |
+|---|---|
+| `mlbarcode.CODE_TYPES.ALL_FORMATS` | `0` |
+| `mlbarcode.CODE_TYPES.CODE_128` | `1` |
+| `mlbarcode.CODE_TYPES.CODE_39` | `2` |
+| `mlbarcode.CODE_TYPES.CODE_93` | `4` |
+| `mlbarcode.CODE_TYPES.CODABAR` | `8` |
+| `mlbarcode.CODE_TYPES.DATA_MATRIX` | `16` |
+| `mlbarcode.CODE_TYPES.EAN_13` | `32` |
+| `mlbarcode.CODE_TYPES.EAN_8` | `64` |
+| `mlbarcode.CODE_TYPES.ITF` | `128` |
+| `mlbarcode.CODE_TYPES.QR_CODE` | `256` |
+| `mlbarcode.CODE_TYPES.UPC_A` | `512` |
+| `mlbarcode.CODE_TYPES.UPC_E` | `1024` |
+| `mlbarcode.CODE_TYPES.PDF417` | `2048` |
+| `mlbarcode.CODE_TYPES.AZTEC` | `4096` |
 
 ### Result Object
 
@@ -90,7 +107,7 @@ Use `0` to scan all formats, or pass an ML Kit barcode format constant. See [ML 
 
 - `file://` URIs are decoded directly from the filesystem (avoids ContentResolver restrictions on modern Android).
 - `content://` URIs are loaded via ContentResolver (works with Photo Picker and MediaStore outputs).
-- `WRITE_EXTERNAL_STORAGE` and `READ_EXTERNAL_STORAGE` permissions are declared with `maxSdkVersion="32"` (not requested on Android 13+).
+- The plugin does not declare `READ_EXTERNAL_STORAGE` or `WRITE_EXTERNAL_STORAGE`; it relies on URI access provided by app flow (for example Photo Picker / MediaStore URI grants).
 
 ## iOS Notes
 

@@ -8,6 +8,7 @@
 #define FASTFILEURI ((int) 2)
 #define FASTNATIVEURI ((int) 3)
 #define BASE64 ((int) 4)
+#define ALLOWED_BARCODE_FORMATS (MLKBarcodeFormatCode128 | MLKBarcodeFormatCode39 | MLKBarcodeFormatCode93 | MLKBarcodeFormatCodaBar | MLKBarcodeFormatDataMatrix | MLKBarcodeFormatEAN13 | MLKBarcodeFormatEAN8 | MLKBarcodeFormatITF | MLKBarcodeFormatQRCode | MLKBarcodeFormatUPCA | MLKBarcodeFormatUPCE | MLKBarcodeFormatPDF417 | MLKBarcodeFormatAztec)
 
 - (void)getBarcode:(CDVInvokedUrlCommand*)command
 {
@@ -94,7 +95,7 @@
             
             if (imageToScan != nil)
             {
-                MLKBarcodeFormat format = ctype; // MLKBarcodeFormatAll
+                MLKBarcodeFormat format = [self sanitizeBarcodeFormats:ctype];
                 MLKBarcodeScannerOptions *barcodeOptions = [[MLKBarcodeScannerOptions alloc] initWithFormats:format];
                 MLKBarcodeScanner *barcodeScanner = [MLKBarcodeScanner barcodeScannerWithOptions:barcodeOptions];
 
@@ -166,6 +167,18 @@
             [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         }
     }];
+}
+
+-(MLKBarcodeFormat)sanitizeBarcodeFormats:(NSInteger)rawFormats
+{
+    if (rawFormats <= 0) {
+        return MLKBarcodeFormatAll;
+    }
+    NSInteger sanitized = rawFormats & ALLOWED_BARCODE_FORMATS;
+    if (sanitized == 0) {
+        return MLKBarcodeFormatAll;
+    }
+    return (MLKBarcodeFormat)sanitized;
 }
 
 

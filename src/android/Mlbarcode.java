@@ -35,6 +35,20 @@ public class Mlbarcode extends CordovaPlugin {
     private static final int FASTFILEURI = 2; // Make uncompressed bitmap using uri from picture library (FASTFILEURI & FASTFILEURI have same functionality in android)
     private static final int FASTNATIVEURI = 3; // Make compressed bitmap using uri from picture library for faster ocr but might reduce accuracy (FASTFILEURI & FASTFILEURI have same functionality in android)
     private static final int BASE64 = 4;  // send base64 image instead of uri
+    private static final int ALLOWED_BARCODE_FORMATS =
+            Barcode.FORMAT_CODE_128
+                    | Barcode.FORMAT_CODE_39
+                    | Barcode.FORMAT_CODE_93
+                    | Barcode.FORMAT_CODABAR
+                    | Barcode.FORMAT_DATA_MATRIX
+                    | Barcode.FORMAT_EAN_13
+                    | Barcode.FORMAT_EAN_8
+                    | Barcode.FORMAT_ITF
+                    | Barcode.FORMAT_QR_CODE
+                    | Barcode.FORMAT_UPC_A
+                    | Barcode.FORMAT_UPC_E
+                    | Barcode.FORMAT_PDF417
+                    | Barcode.FORMAT_AZTEC;
 
     @Override
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -114,7 +128,7 @@ public class Mlbarcode extends CordovaPlugin {
                 }
 
                 BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
-                        .setBarcodeFormats(argscodetype)
+                        .setBarcodeFormats(sanitizeBarcodeFormats(argscodetype))
                         .enableAllPotentialBarcodes()
                         .build();
                 BarcodeScanner barcodeScanner = BarcodeScanning.getClient(options);
@@ -212,5 +226,13 @@ public class Mlbarcode extends CordovaPlugin {
         try (InputStream decodeStream = ctx.getContentResolver().openInputStream(uri)) {
             return BitmapFactory.decodeStream(decodeStream, null, bmOptions);
         }
+    }
+
+    private int sanitizeBarcodeFormats(int rawFormats) {
+        if (rawFormats <= 0) {
+            return Barcode.FORMAT_ALL_FORMATS;
+        }
+        int sanitized = rawFormats & ALLOWED_BARCODE_FORMATS;
+        return sanitized == 0 ? Barcode.FORMAT_ALL_FORMATS : sanitized;
     }
 }
