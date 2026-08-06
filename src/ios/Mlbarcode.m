@@ -235,12 +235,16 @@
     PHFetchResult *result = nil;
     
     // Handle modern ph:// photo library URLs.
-    // The ph:// scheme uses the PHAsset local identifier as the host component,
+    // The ph:// scheme uses the PHAsset local identifier as the resource specifier,
     // e.g. "ph://CC95F08C-88C3-4012-9D6D-64A413D254B3/L0/001".
     if ([urlMedia.scheme isEqualToString:@"ph"]) {
-        NSString *localIdentifier = urlMedia.host;
-        if (localIdentifier && localIdentifier.length > 0) {
-            result = [PHAsset fetchAssetsWithLocalIdentifiers:@[localIdentifier] options:nil];
+        NSString *urlString = urlMedia.absoluteString;
+        if ([urlString hasPrefix:@"ph://"]) {
+            NSString *localIdentifier = [urlString substringFromIndex:[@"ph://" length]];
+            localIdentifier = [localIdentifier stringByRemovingPercentEncoding];
+            if (localIdentifier && localIdentifier.length > 0) {
+                result = [PHAsset fetchAssetsWithLocalIdentifiers:@[localIdentifier] options:nil];
+            }
         }
     } else {
         // Fall back to the assets-library:// (ALAsset) URL style

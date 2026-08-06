@@ -33,6 +33,10 @@
     <preference name="MLKIT_BARCODE_PACKAGE" default="com.google.mlkit:barcode-scanning"/>
     <preference name="MLKIT_BARCODE_VERSION" default="17.3.0"/>
 
+    <config-file target="AndroidManifest.xml" parent="/*">
+      <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    </config-file>
+
     <source-file src="src/android/Mlbarcode.java" target-dir="src/com/tgptom/cordova/plugin/mlbarcode/" />
     
     <framework src="$MLKIT_BARCODE_PACKAGE:$MLKIT_BARCODE_VERSION" />

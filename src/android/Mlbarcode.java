@@ -81,7 +81,11 @@ public class Mlbarcode extends CordovaPlugin {
                     try {
                         String imagestr = argimagestr;
                         if (imagestr.startsWith("file://")) {
-                            String filePath = imagestr.substring(7);
+                            String filePath = Uri.parse(imagestr).getPath();
+                            if (filePath == null || filePath.isEmpty()) {
+                                callbackContext.error("Invalid file URI");
+                                return;
+                            }
                             if (argstype == NORMFILEURI || argstype == NORMNATIVEURI) {
                                 bitmap = BitmapFactory.decodeFile(filePath);
                             } else {

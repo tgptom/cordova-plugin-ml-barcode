@@ -107,7 +107,8 @@ Use one of the plugin constants below (or `0` for all formats). You can pass eit
 
 - `file://` URIs are decoded directly from the filesystem (avoids ContentResolver restrictions on modern Android).
 - `content://` URIs are loaded via ContentResolver (works with Photo Picker and MediaStore outputs).
-- The plugin does not declare `READ_EXTERNAL_STORAGE` or `WRITE_EXTERNAL_STORAGE`; it relies on URI access provided by app flow (for example Photo Picker / MediaStore URI grants).
+- The plugin declares `READ_EXTERNAL_STORAGE` through Android 12L so apps can request access when reading shared `file://` paths on legacy devices. It does not request the permission at runtime.
+- Prefer `content://` URIs from Photo Picker or MediaStore on modern Android; these rely on URI grants and do not require storage permission.
 
 ## iOS Notes
 
